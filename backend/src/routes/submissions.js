@@ -159,19 +159,24 @@ router.post(
         return res.json({ message: 'All students have already submitted', reminded_count: 0 });
       }
 
-      for (const student of pendingStudents.rows) {
-        await pool.query(
-          `INSERT INTO notifications (user_id, type, title, message, related_id)
-           VALUES ($1, $2, $3, $4, $5)`,
-          [
-            student.id,
-            'submission_reminder',
-            `Reminder: ${title} due soon`,
-            `Don't forget to submit "${title}" (${subject}). Deadline: ${new Date(deadline).toLocaleDateString()}`,
-            assignmentId,
-          ]
-        );
-      }
+      const notifTitle = `Reminder: ${title} due soon`;
+      const notifMessage = `Don't forget to submit "${title}" (${subject}). Deadline: ${new Date(deadline).toLocaleDateString()}`;
+
+      const placeholders = pendingStudents.rows
+        .map((_, i) => `($${i * 5 + 1}, $${i * 5 + 2}, $${i * 5 + 3}, $${i * 5 + 4}, $${i * 5 + 5})`)
+        .join(', ');
+      const notifValues = pendingStudents.rows.flatMap((s) => [
+        s.id,
+        'submission_reminder',
+        notifTitle,
+        notifMessage,
+        assignmentId,
+      ]);
+
+      await pool.query(
+        `INSERT INTO notifications (user_id, type, title, message, related_id) VALUES ${placeholders}`,
+        notifValues
+      );
 
       res.json({
         message: 'Reminders sent successfully',

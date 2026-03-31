@@ -9,19 +9,19 @@ const router = express.Router();
 router.use(authenticate);
 
 async function createNotificationsForAllStudents(pool, type, title, message, relatedId) {
-  const students = await pool.query(
-    "SELECT id FROM users WHERE role = 'student'"
-  );
+  const students = await pool.query("SELECT id FROM users WHERE role = 'student'");
   if (students.rows.length === 0) return;
 
-  const values = students.rows.map((s) => [s.id, type, title, message, relatedId]);
-  for (const v of values) {
-    await pool.query(
-      `INSERT INTO notifications (user_id, type, title, message, related_id)
-       VALUES ($1, $2, $3, $4, $5)`,
-      v
-    );
-  }
+  // Build a single multi-row INSERT for efficiency
+  const placeholders = students.rows
+    .map((_, i) => `($${i * 5 + 1}, $${i * 5 + 2}, $${i * 5 + 3}, $${i * 5 + 4}, $${i * 5 + 5})`)
+    .join(', ');
+  const values = students.rows.flatMap((s) => [s.id, type, title, message, relatedId]);
+
+  await pool.query(
+    `INSERT INTO notifications (user_id, type, title, message, related_id) VALUES ${placeholders}`,
+    values
+  );
 }
 
 // POST /api/assignments — Teacher only

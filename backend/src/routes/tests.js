@@ -9,13 +9,17 @@ router.use(authenticate);
 
 async function notifyAllStudents(pool, type, title, message, relatedId) {
   const students = await pool.query("SELECT id FROM users WHERE role = 'student'");
-  for (const student of students.rows) {
-    await pool.query(
-      `INSERT INTO notifications (user_id, type, title, message, related_id)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [student.id, type, title, message, relatedId]
-    );
-  }
+  if (students.rows.length === 0) return;
+
+  const placeholders = students.rows
+    .map((_, i) => `($${i * 5 + 1}, $${i * 5 + 2}, $${i * 5 + 3}, $${i * 5 + 4}, $${i * 5 + 5})`)
+    .join(', ');
+  const values = students.rows.flatMap((s) => [s.id, type, title, message, relatedId]);
+
+  await pool.query(
+    `INSERT INTO notifications (user_id, type, title, message, related_id) VALUES ${placeholders}`,
+    values
+  );
 }
 
 // POST /api/tests — Teacher only
