@@ -211,7 +211,7 @@ export default function StudyRoadmap() {
                       <div className="flex items-start justify-between flex-wrap gap-2 mb-2">
                         <div>
                           <span className="text-xs font-semibold text-gray-600">Day {day.day_number}</span>
-                          <span className="text-xs text-gray-400 ml-2">{format(new Date(day.date + 'T00:00:00'), 'EEE, MMM d')}</span>
+                          <span className="text-xs text-gray-400 ml-2">{format(new Date(day.date.includes('T') ? day.date : day.date + 'T00:00:00'), 'EEE, MMM d')}</span>
                           {status === 'current' && <span className="ml-2 text-xs bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded">TODAY</span>}
                         </div>
                         {day.is_revision_day && (
